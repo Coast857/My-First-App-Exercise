@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>健身助手</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">智能联想版</p>
+      <h1>健身助手</h1>
+    </div>
+    <div class="cta-group">
+      <button class="chip primary" id="installBtn" style="display:none;">安装</button>
+      <button class="chip" id="resetDataBtn">重置数据</button>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-view="food">热量计算</button>
+    <button class="tab" data-view="exercise">动作库</button>
+  </nav>
+
+  <main class="container">
+    <section class="card view active" data-view="food">
+      <div class="stack">
+        <label class="field">
+          <span>食物名称 (输入试试看)</span>
+          <div class="search-wrapper">
+            <input type="search" id="foodSearch" placeholder="输入 如：米饭、鸡胸肉" autocomplete="off">
+            <div class="suggestions-box" id="foodSuggestBox"></div>
+          </div>
+        </label>
+        
+        <label class="field">
+          <span>摄入量 (克)</span>
+          <input type="number" id="foodWeight" value="100">
+        </label>
+        
+        <button class="primary" id="calcBtn">计算热量</button>
+        <div class="result" id="calcResult" style="margin-top:10px; min-height:40px;"></div>
+      </div>
+
+      <div class="list-header"><h3>常用食物</h3></div>
+      <div class="list" id="foodList"></div>
+    </section>
+
+    <section class="card view" data-view="exercise">
+      <div class="stack">
+        <label class="field">
+          <span>搜索动作</span>
+          <div class="search-wrapper">
+            <input type="search" id="exerciseSearch" placeholder="输入 如：深蹲、胸" autocomplete="off">
+            <div class="suggestions-box" id="exerciseSuggestBox"></div>
+          </div>
+        </label>
+      </div>
+      <div class="list" id="exerciseList"></div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
