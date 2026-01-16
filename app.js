@@ -1,10 +1,10 @@
 /**
- * 健身助手 - 智能联想版
- * 功能：包含100+数据，支持实时下拉搜索建议
+ * 健身助手 - 完整全栈版
+ * 功能：前端管理界面交互 + 后端数据同步
  */
 
 // ==========================================
-// 1. 海量数据源 (保持不变，确保数据充足)
+// 1. 数据源 (保留本地数据用于搜索和展示)
 // ==========================================
 const massiveFoods = [
   {id:'f1', name:'米饭(熟)', cal:116}, {id:'f2', name:'馒头', cal:223}, {id:'f3', name:'全麦面包', cal:246},
@@ -38,115 +38,91 @@ const gymExercises = [
   { target: '腹', name: '平板支撑', cues: ['身体直线', '收腹夹臀'] }
 ];
 
-// 初始化或读取数据
-const STORAGE_KEYS = { foods: 'ga_foods_v3', exercises: 'ga_exercises_v3' };
-let foods = JSON.parse(localStorage.getItem(STORAGE_KEYS.foods)) || massiveFoods;
-let exercises = JSON.parse(localStorage.getItem(STORAGE_KEYS.exercises)) || gymExercises;
+// 初始化
+let foods = massiveFoods; 
+let exercises = gymExercises;
 
 // ==========================================
-// 2. UI 元素
+// 2. UI 元素获取
 // ==========================================
 const dom = {
   tabs: document.querySelectorAll('.tab'),
   views: document.querySelectorAll('.view'),
-  // 食物相关
   foodSearch: document.getElementById('foodSearch'),
   foodSuggestBox: document.getElementById('foodSuggestBox'),
   foodWeight: document.getElementById('foodWeight'),
   calcBtn: document.getElementById('calcBtn'),
   calcResult: document.getElementById('calcResult'),
   foodList: document.getElementById('foodList'),
-  // 动作相关
   exerciseSearch: document.getElementById('exerciseSearch'),
   exerciseSuggestBox: document.getElementById('exerciseSuggestBox'),
   exerciseList: document.getElementById('exerciseList'),
-  // 通用
   resetDataBtn: document.getElementById('resetDataBtn')
 };
 
 // ==========================================
-// 3. 核心功能：自动补全 (Auto Complete)
+// 3. 核心功能：计算并同步至后端 (已更新)
 // ==========================================
-function setupAutoComplete(input, box, data, type) {
-  // 1. 监听输入事件
-  input.addEventListener('input', (e) => {
-      const val = e.target.value.trim().toLowerCase();
-      
-      if (!val) {
-          box.classList.remove('show');
-          // 如果是动作页面，清空搜索时显示所有
-          if (type === 'exercise') renderExerciseList('');
-          return;
-      }
+async function handleCalculate() {
+  const keyword = dom.foodSearch.value.trim();
+  const grams = parseFloat(dom.foodWeight.value);
 
-      // 2. 过滤数据
-      const matches = data.filter(item => 
-          item.name.toLowerCase().includes(val) || 
-          (item.target && item.target.includes(val)) // 同时也搜部位
-      );
+  if (!keyword || isNaN(grams)) return;
 
-      // 3. 渲染下拉建议
-      if (matches.length > 0) {
-          box.innerHTML = matches.slice(0, 6).map(item => { // 最多显示6条
-              const metaInfo = type === 'food' ? `${item.cal} kcal` : item.target;
-              return `
-                  <div class="suggestion-item" data-val="${item.name}">
-                      <span>${item.name}</span>
-                      <span class="suggestion-meta">${metaInfo}</span>
+  // 1. 在本地库查找食物基础信息
+  const food = foods.find(f => f.name === keyword) || foods.find(f => f.name.includes(keyword));
+  
+  if (food) {
+      dom.calcResult.innerHTML = `<div class="loading">正在同步至数据库...</div>`;
+      try {
+          // 2. 发送请求到 FastAPI
+          const response = await fetch('http://127.0.0.1:8000/add-log/', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                  name: food.name,
+                  weight: grams,
+                  calories_per_100g: food.cal
+              })
+          });
+
+          // 3. 处理后端响应
+          if (!response.ok) throw new Error('Network response was not ok');
+          const data = await response.json();
+
+          // 4. 更新 UI
+          dom.calcResult.innerHTML = `
+              <div style="background:#dcfce7; color:#166534; padding:12px; border-radius:8px; border:1px solid #bbf7d0;">
+                  <div>✅ 已存入 PostgreSQL</div>
+                  <div style="font-size:20px; font-weight:bold; margin-top:4px;">
+                    ${food.name}：${data.total_calories} kcal
                   </div>
-              `;
-          }).join('');
-          box.classList.add('show');
-      } else {
-          box.classList.remove('show');
+              </div>`;
+      } catch (error) {
+          console.error(error);
+          dom.calcResult.innerHTML = `<div style="color:#ef4444">❌ 后端连接失败 (请检查终端)</div>`;
       }
-
-      // 如果是动作搜索，实时更新下方大列表
-      if (type === 'exercise') renderExerciseList(val);
-  });
-
-  // 4. 监听点击建议项
-  box.addEventListener('click', (e) => {
-      const item = e.target.closest('.suggestion-item');
-      if (item) {
-          const val = item.dataset.val;
-          input.value = val;
-          box.classList.remove('show');
-          
-          // 选中后的后续动作
-          if (type === 'food') {
-              handleCalculate(); // 选中食物直接触发计算
-          } else {
-              renderExerciseList(val); // 选中动作直接筛选列表
-          }
-      }
-  });
-
-  // 5. 点击外部隐藏建议框
-  document.addEventListener('click', (e) => {
-      if (!input.contains(e.target) && !box.contains(e.target)) {
-          box.classList.remove('show');
-      }
-  });
+  } else {
+      dom.calcResult.innerHTML = `<span style="color:#ef4444">未找到"${keyword}"</span>`;
+  }
 }
 
 // ==========================================
-// 4. 其他业务逻辑
+// 4. 界面交互逻辑 (视图切换 & 列表渲染)
 // ==========================================
 
+// 切换标签页 (修复点：找回了丢失的 switchView)
+function switchView(viewName) {
+  dom.tabs.forEach(t => t.classList.toggle('active', t.dataset.view === viewName));
+  dom.views.forEach(v => {
+      v.classList.remove('active');
+      // 简单的延时动画效果
+      if (v.dataset.view === viewName) setTimeout(() => v.classList.add('active'), 10);
+  });
+}
+
+// 渲染动作列表 (修复点：找回了丢失的 renderExerciseList)
 const getYoutubeLink = (keyword) => `https://www.youtube.com/results?search_query=${encodeURIComponent(keyword + ' 动作教学')}`;
-
-function renderFoodList() {
-  dom.foodList.innerHTML = foods.slice(0, 30).map(f => `
-      <div class="item">
-          <div class="item-row">
-              <strong>${f.name}</strong>
-              <button class="ghost-btn" onclick="deleteFood('${f.id}')">×</button>
-          </div>
-          <div class="cue">${f.cal} kcal / 100g</div>
-      </div>
-  `).join('');
-}
 
 function renderExerciseList(filterText = '') {
   const list = filterText 
@@ -160,80 +136,62 @@ function renderExerciseList(filterText = '') {
               <a href="${getYoutubeLink(e.name)}" target="_blank" class="video-link">▶ 视频</a>
           </div>
           <div class="cue">${e.cues.join(' · ')}</div>
-          <div class="item-row" style="margin-top:5px;justify-content:flex-end;">
-               <button class="ghost-btn" onclick="deleteExercise('${e.name}')">移除</button>
-          </div>
       </div>
   `).join('');
 }
 
-function handleCalculate() {
-  const keyword = dom.foodSearch.value.trim();
-  const grams = parseFloat(dom.foodWeight.value);
+// 自动补全逻辑
+function setupAutoComplete(input, box, data, type) {
+  input.addEventListener('input', (e) => {
+      const val = e.target.value.trim().toLowerCase();
+      if (!val) {
+          box.classList.remove('show');
+          if (type === 'exercise') renderExerciseList('');
+          return;
+      }
+      const matches = data.filter(item => item.name.toLowerCase().includes(val));
+      
+      if (matches.length > 0) {
+          box.innerHTML = matches.slice(0, 6).map(item => `
+              <div class="suggestion-item" data-val="${item.name}">
+                  <span>${item.name}</span>
+                  <span class="suggestion-meta">${type === 'food' ? item.cal + ' kcal' : ''}</span>
+              </div>
+          `).join('');
+          box.classList.add('show');
+      } else { box.classList.remove('show'); }
 
-  if (!keyword) return;
+      if (type === 'exercise') renderExerciseList(val);
+  });
 
-  const food = foods.find(f => f.name === keyword) || foods.find(f => f.name.includes(keyword));
-  
-  if (food) {
-      const total = ((food.cal / 100) * grams).toFixed(0);
-      dom.calcResult.innerHTML = `
-          <div style="background:#f0f9ff; color:#0369a1; padding:12px; border-radius:8px; border:1px solid #bae6fd; animation: slideFadeIn 0.3s;">
-              <div>${food.name} (${grams}g)</div>
-              <div style="font-size:24px; font-weight:bold; margin-top:4px;">${total} <span style="font-size:14px;">kcal</span></div>
-          </div>`;
-  } else {
-      dom.calcResult.innerHTML = `<span style="color:#ef4444">未找到"${keyword}"</span>`;
-  }
-}
+  box.addEventListener('click', (e) => {
+      const item = e.target.closest('.suggestion-item');
+      if (item) {
+          input.value = item.dataset.val;
+          box.classList.remove('show');
+          if (type === 'food') handleCalculate();
+          if (type === 'exercise') renderExerciseList(input.value);
+      }
+  });
 
-function switchView(viewName) {
-  dom.tabs.forEach(t => t.classList.toggle('active', t.dataset.view === viewName));
-  dom.views.forEach(v => {
-      v.classList.remove('active');
-      if (v.dataset.view === viewName) setTimeout(() => v.classList.add('active'), 10);
+  document.addEventListener('click', (e) => {
+      if (!input.contains(e.target) && !box.contains(e.target)) box.classList.remove('show');
   });
 }
 
 // ==========================================
-// 5. 初始化与事件绑定
+// 5. 事件绑定与初始化
 // ==========================================
 
-// 初始化两个搜索框的联想功能
+// 绑定 Tab 点击事件
+dom.tabs.forEach(tab => tab.addEventListener('click', () => switchView(tab.dataset.view)));
+
+// 绑定计算按钮
+dom.calcBtn.addEventListener('click', handleCalculate);
+
+// 初始化自动补全
 setupAutoComplete(dom.foodSearch, dom.foodSuggestBox, foods, 'food');
 setupAutoComplete(dom.exerciseSearch, dom.exerciseSuggestBox, exercises, 'exercise');
 
-dom.calcBtn.addEventListener('click', handleCalculate);
-dom.resetDataBtn.addEventListener('click', () => {
-  if(confirm('重置数据？')) {
-      localStorage.clear();
-      location.reload();
-  }
-});
-
-dom.tabs.forEach(tab => tab.addEventListener('click', () => switchView(tab.dataset.view)));
-
 // 初始渲染
-renderFoodList();
 renderExerciseList();
-
-// 全局删除函数
-window.deleteFood = (id) => {
-  if(confirm('删除此项？')) {
-      foods = foods.filter(f => f.id !== id);
-      localStorage.setItem(STORAGE_KEYS.foods, JSON.stringify(foods));
-      renderFoodList();
-  }
-};
-window.deleteExercise = (name) => {
-  if(confirm('删除此动作？')) {
-      exercises = exercises.filter(e => e.name !== name);
-      localStorage.setItem(STORAGE_KEYS.exercises, JSON.stringify(exercises));
-      renderExerciseList(dom.exerciseSearch.value);
-  }
-};
-
-// PWA Service Worker 注册
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
-}
