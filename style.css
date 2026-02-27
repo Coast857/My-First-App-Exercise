@@ -1,110 +1,195 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
 :root {
-  --bg: #f6f8fb;
-  --panel: #ffffff;
-  --text: #0f172a;
-  --muted: #64748b;
-  --accent: #0ea5e9;
-  --danger: #ef4444;
-  --border: #e2e8f0;
-  --shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
-  --radius: 16px;
+    --primary: #2563eb;
+    --bg: #f8fafc;
+    --card-bg: #ffffff;
+    --text: #1e293b;
+    --nav-height: 60px;
+    --muscle-selected-fill: #e2e8f0; /* 浅灰色 selected fill */
+    --muscle-selected-stroke: #64748b; /* selected stroke */
 }
-
-* { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
 
 body {
-  margin: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  padding: 10px 16px 80px;
+    margin: 0;
+    padding: 0 0 calc(var(--nav-height) + 20px) 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
 }
 
-/* 顶部与导航 */
-.topbar { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; margin-bottom: 10px; }
-.eyebrow { font-size: 12px; font-weight: 600; color: var(--accent); text-transform: uppercase; margin: 0; }
-h1 { margin: 4px 0 0; font-size: 20px; font-weight: 700; }
+.view { display: none; padding: 16px; }
+.view.active { display: block; animation: fadeIn 0.3s; }
 
-.tabs {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
-  background: #eef2f6; padding: 4px; border-radius: 12px; margin-bottom: 20px;
-}
-.tab {
-  background: transparent; border: none; padding: 12px; border-radius: 8px;
-  font-weight: 600; color: var(--muted); cursor: pointer; transition: all 0.2s;
-}
-.tab.active { background: white; color: var(--accent); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-/* 视图切换动画 */
-.view { display: none; opacity: 0; }
-.view.active {
-  display: block;
-  animation: slideFadeIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+.header {
+    display: flex; align-items: center; font-size: 24px; font-weight: 800;
+    margin-bottom: 20px; color: var(--primary);
+    justify-content: space-between; /* controls for rotatble maps */
 }
-@keyframes slideFadeIn {
-  0% { opacity: 0; transform: translateY(15px); }
-  100% { opacity: 1; transform: translateY(0); }
+.icon-title { width: 28px; height: 28px; margin-right: 10px; }
+
+/* controls for rotatable maps */
+.header-actions { display: flex; gap: 8px; }
+.btn-action {
+    background: #f1f5f9; border: 1px solid #cbd5e1;
+    color: #475569; padding: 4px 10px; border-radius: 6px;
+    font-size: 12px; cursor: pointer; transition: background 0.2s;
 }
+.btn-action:hover { background: #e2e8f0; }
 
-/* 卡片与布局 */
-.card { background: var(--panel); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
-.stack { display: grid; gap: 16px; margin-bottom: 24px; }
-.field { display: grid; gap: 6px; }
-.field span { font-size: 13px; font-weight: 500; color: var(--muted); }
-
-/* =========== 核心：搜索建议框样式 =========== */
-.search-wrapper {
-  position: relative; /* 让下拉框相对于这个容器定位 */
+.card {
+    background: var(--card-bg); padding: 20px; border-radius: 16px;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 16px;
 }
 
-input {
-  width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border);
-  font-size: 16px; transition: 0.2s; background: white;
+input, select {
+    width: 100%; padding: 12px; margin-bottom: 12px;
+    border: 1px solid #e2e8f0; border-radius: 8px; box-sizing: border-box; font-size: 16px;
 }
-input:focus { border-color: var(--accent); }
 
-.suggestions-box {
-  position: absolute;
-  top: 100%; left: 0; right: 0;
-  background: white;
-  border: 1px solid var(--border);
-  border-radius: 0 0 10px 10px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-  max-height: 200px;
-  overflow-y: auto;
-  z-index: 100; /* 确保浮在所有内容上面 */
-  display: none; /* 默认隐藏 */
-  margin-top: 2px;
-}
-.suggestions-box.show { display: block; }
+.row-labeled { display: flex; align-items: center; margin-bottom: 12px; }
+.row-labeled label { width: 60px; font-weight: 600; color: #64748b; flex-shrink: 0; }
+.row-labeled input, .row-labeled select { margin-bottom: 0; flex-grow: 1; }
 
-.suggestion-item {
-  padding: 12px; border-bottom: 1px solid #f1f5f9; cursor: pointer; font-size: 14px;
-  display: flex; justify-content: space-between;
-}
-.suggestion-item:hover { background: #f8fafc; color: var(--accent); }
-.suggestion-item:last-child { border-bottom: none; }
-.suggestion-meta { font-size: 12px; color: #94a3b8; }
-/* ========================================== */
+.meal-input-group { margin-bottom: 15px; }
+.meal-input-group label { display: block; font-weight: bold; color: #334155; margin-bottom: 5px; font-size: 14px; }
+.meal-input-group input { margin-bottom: 0; }
 
-button.primary {
-  width: 100%; background: var(--accent); color: white; border: none;
-  padding: 14px; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer;
+.btn-primary, .btn-outline, .btn-danger {
+    width: 100%; padding: 12px; border: none; border-radius: 8px;
+    font-weight: 600; font-size: 16px; cursor: pointer; margin-top: 8px;
 }
-button.primary:active { transform: scale(0.98); }
+.btn-primary { background: var(--primary); color: white; }
+.btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
+.btn-danger { background: #ef4444; color: white; }
+.btn-group { display: flex; gap: 10px; }
 
-.item {
-  border: 1px solid var(--border); padding: 16px; border-radius: 12px;
-  background: #fcfcfc; margin-bottom: 10px;
+/* 底部导航栏 */
+.bottom-nav {
+    position: fixed; bottom: 0; left: 0; width: 100%;
+    height: var(--nav-height); background: white;
+    display: flex; justify-content: space-around; align-items: center;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.05); z-index: 1000;
 }
-.item-row { display: flex; justify-content: space-between; align-items: center; }
-.tag { font-size: 11px; padding: 2px 8px; border-radius: 4px; background: #e0f2fe; color: var(--accent); }
+.nav-item { 
+    text-align: center; color: #94a3b8; cursor: pointer; 
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.nav-item.active { color: var(--primary); }
+.nav-icon { width: 24px; height: 24px; margin-bottom: 4px; }
+.label { font-size: 10px; }
+
+.suggestions { background: white; border: 1px solid #e2e8f0; display: none; border-radius: 8px; margin-top: -10px; }
+.suggestions.show { display: block; }
+.suggestion-item { padding: 10px; border-bottom: 1px solid #f1f5f9; cursor: pointer; }
+
+/* --- 新增：肌肉图与互动组件样式 --- */
+.muscle-map-container { position: relative; } /* required for hidden functionality */
+
+/* Detailed segmented SVG styles */
+.muscle-svg {
+    width: 100%; max-width: 250px; display: block;
+    margin: 0 auto;
+}
+
+.muscle-svg path, .muscle-svg rect {
+    fill: transparent; stroke: #0f172a; stroke-width: 1.5;
+}
+
+/* Detailed segmentation within key muscle groups */
+.muscle-svg [stroke="#0f172a"] { stroke: #e2e8f0; stroke-width: 1; }
+
+/* Interactive parts styles */
+.muscle-svg [data-target] {
+    stroke-width: 2;
+    cursor: pointer; transition: all 0.2s ease;
+}
+
+/* Hover state within non-minimalist style */
+.muscle-svg [data-target]:hover { fill: #f1f5f9; }
+
+/* Selected state - light grey fill and different stroke */
+.muscle-svg [data-target].selected {
+    fill: var(--muscle-selected-fill); stroke: var(--muscle-selected-stroke);
+}
+
+/* Gender/View toggle logic via CSS */
+.muscle-svg-wrapper.hidden { display: none; }
+.muscle-svg-wrapper.current-view { display: block; }
+
+/* Dynamically generated muscle info card styles */
+.muscle-info-card {
+    background: #ffffff; border: 1px solid #e2e8f0;
+    border-left: 4px solid var(--primary);
+    padding: 15px; margin-bottom: 15px; border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    animation: fadeInUp 0.3s;
+}
+
+.muscle-info-card h3 { margin-top:0; color:var(--primary); font-size: 18px; }
+
+.muscle-benefit {
+    font-size: 13px; color: #475569; margin-bottom: 15px;
+    line-height: 1.5; background: #f8fafc; padding: 8px; border-radius: 4px;
+}
+
+.ex-list-mini { border-top: 1px solid #e2e8f0; padding-top: 10px; }
+
+/* 动作库列表 */
+.ex-item { padding: 16px 0; border-bottom: 1px solid #eee; }
+.ex-item:last-child { border-bottom: none; }
+.ex-item h4 { margin: 0 0 5px 0; color: var(--text); font-size: 16px; }
+
+/* 视频链接按钮 */
 .video-link {
-  color: var(--danger); text-decoration: none; font-size: 13px; font-weight: 600;
-  display: inline-flex; align-items: center; gap: 4px;
+    display: inline-block; margin-top: 8px; font-size: 12px; color: var(--primary);
+    text-decoration: none; background: rgba(37, 99, 235, 0.1); padding: 4px 10px;
+    border-radius: 20px; font-weight: 600; transition: background 0.2s;
 }
-.cue { color: var(--muted); font-size: 14px; margin-top: 8px; line-height: 1.5; }
-.ghost-btn { background: none; border: none; color: #cbd5e1; cursor: pointer; padding: 4px; }
+.video-link:hover { background: rgba(37, 99, 235, 0.2); }
+
+/* 计算结果框 */
+.result-box {
+    margin-top: 20px; padding: 15px; background: #eff6ff; border-radius: 10px;
+    border: 1px solid #dbeafe; text-align: center; color: #1e3a8a;
+    font-size: 16px; font-weight: 500;
+}
+
+.chart-container { background: white; padding: 10px; border-radius: 12px; height: 300px; position: relative; }
+.hidden { display: none; }
+
+/* --- 新增：Toast 消息提示 --- */
+#toast-container {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    width: 90%;
+    max-width: 400px;
+}
+
+.toast-notification {
+    background: #333;
+    color: #fff;
+    padding: 12px 20px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    font-size: 14px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.toast-notification.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.toast-notification.warning { background: #f59e0b; color: #fff; } /* 黄色警告 */
+.toast-notification.error { background: #ef4444; color: #fff; }   /* 红色错误 */
+.toast-notification.success { background: #10b981; color: #fff; } /* 绿色成功 */
